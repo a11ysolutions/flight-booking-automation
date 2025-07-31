@@ -156,3 +156,31 @@ npm run invoke         # Invoke function
 
 
 **Good luck with your implementation! 🚀**
+
+## 🛠️ Additional Implementations
+
+### 1. **Element-Specific Tests**
+- Added automated tests for each element of the flight booking form component on the Aegean Air page. These tests validate:
+  - **Trip Type Selector**: Ensures the dropdown for selecting "Round-trip" or "One-way" is functional and accessible.
+  - **Traveler Info Selector**: Verifies the dropdown for selecting passengers and class is interactive and meets accessibility standards.
+  - **Promo Code Section**: Checks the input field for entering promotional codes is present and functional.
+  - **Origin Field**: Validates the input field for selecting the origin location is accessible and interactive.
+  - **Start Date Selector**: Ensures the date picker for departure dates is functional and accessible.
+  - **End Date Selector**: Verifies the date picker for return dates is interactive and meets accessibility standards.
+  - **Search Button**: Confirms the search button is visible, interactive, and accessible.
+
+Each test captures detailed results, including:
+- Accessibility attributes (e.g., `aria-label`, `role`).
+- Interaction results (e.g., clicks, focus, hover).
+- DOM changes after interactions (e.g., dropdowns, modals).
+
+### 2. **Automated GitHub Actions Workflow**
+- Implemented a fully automated CI/CD pipeline using GitHub Actions. The workflow includes:
+  - **Dependency Installation**: Installs all required Node.js dependencies.
+  - **Build Process**: Compiles the TypeScript code into JavaScript.
+  - **ECR Deployment**: Builds and pushes the Docker image to AWS Elastic Container Registry (ECR).
+  - **Lambda Deployment**: Deploys the Lambda function using the Serverless Framework.
+  - **Function Invocation**: Invokes the Lambda function and displays the result directly in the GitHub Actions logs.
+  - **Result Formatting**: Ensures the Lambda function's response is properly formatted for readability, including JSON structure and indentation.
+
+This automation ensures a seamless deployment and testing process, reducing manual effort and improving the clarity of the results.

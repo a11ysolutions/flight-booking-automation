@@ -13,6 +13,7 @@
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // Configuration from environment variables or default values
@@ -68,8 +69,15 @@ async function main() {
     
     // Build Docker image
     console.log('\nBuilding Docker image...');
-    executeCommand(`docker build -t ${AWS_ECR_REPOSITORY}:${IMAGE_TAG} -f ${DOCKERFILE_PATH} .`, 
-      'Error building Docker image');
+
+    let buildCommand;
+    if (os.platform() === 'win32') {
+      buildCommand = `cmd /c "set DOCKER_BUILDKIT=1&& docker build --platform=linux/amd64 --compress -t ${AWS_ECR_REPOSITORY}:${IMAGE_TAG} -f "${DOCKERFILE_PATH}" ."`;
+    } else {
+      buildCommand = `DOCKER_BUILDKIT=1 docker build --platform=linux/amd64 --compress -t ${AWS_ECR_REPOSITORY}:${IMAGE_TAG} -f ${DOCKERFILE_PATH} .`;
+    }
+
+    executeCommand(buildCommand, 'Error building Docker image');
     console.log('Docker image built successfully');
     
     // Log in to ECR

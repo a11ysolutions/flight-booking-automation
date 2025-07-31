@@ -15,7 +15,9 @@ import {
   TIMEOUT_NAVIGATION,
   TIMEOUT_SELECTOR,
   PARAMETERS,
+  VALIDATION_SELECTORS,
 } from "./utils/constants";
+import { validateElement } from "./utils/validateElement";
 
 /**
  * AWS Lambda handler function for automated web screenshot capture and S3 storage.
@@ -126,6 +128,18 @@ export const handler = async (
   let statusCode = 200;
   let message = "Success";
 
+  let journeyTypeDivResult: any = null;
+  let travelerInfoDivResult: any = null;
+  let promoCodeDivResult: any = null;
+  let originFieldResult: any = null;
+  let startDateTogglerResult: any = null;
+  let endDateTogglerResult: any = null;
+  let searchButtonResult: any = null;
+
+  let totalInteractiveElements: any[] = [];
+  let accessibleElements: any[] = [];
+  let interactiveElements: any[] = [];
+
   try {
     // Ensure necessary directories exist
     await ensureDirectoriesExist();
@@ -168,42 +182,110 @@ export const handler = async (
     const screenshotPath = "/tmp/screenshots/flight-booking-component.png";
     await element.screenshot({ path: screenshotPath });
 
-    // Generate unique filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `${
-      (process.env.PREFIX, "")
-    }-aegean-flight-booking-${timestamp}.png`;
-
-    // Verify that the file exists before uploading
-    try {
-      await fs.access(screenshotPath);
-    } catch (error: any) {
-      console.error(`Error accessing screenshot file: ${error.message}`);
-      throw new Error(`Screenshot file not found at ${screenshotPath}`);
-    }
-
-    // Initialize S3 client
-    const s3Client = new S3Client({
-      region: process.env.AWS_REGION || "us-east-2",
-    });
-    const bucketName =
-      process.env.AWS_S3_BUCKET || "technical-playwright-result";
-
     // Upload screenshot to S3
-    const fileContent = await fs.readFile(screenshotPath);
+    const bucketName = process.env.AWS_S3_BUCKET || 'technical-playwright-result';
+    const fileName = `aegean-flight-booking-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+    const s3Key = `screenshots/${fileName}`;
 
-    const params = {
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'us-east-2'
+    });
+
+    const screenshotBuffer = await fs.readFile(screenshotPath);
+
+    const uploadParams = {
       Bucket: bucketName,
-      Key: `screenshots/${filename}`,
-      Body: fileContent,
-      ContentType: "image/png",
+      Key: s3Key,
+      Body: screenshotBuffer,
+      ContentType: 'image/png',
     };
 
-    const uploadCommand = new PutObjectCommand(params);
-    await s3Client.send(uploadCommand);
+    await s3Client.send(new PutObjectCommand(uploadParams));
+    screenshotUrl = `https://${bucketName}.s3.amazonaws.com/${s3Key}`;
 
-    // Generate URL for the uploaded screenshot
-    screenshotUrl = `https://${bucketName}.s3.amazonaws.com/screenshots/${filename}`;
+    journeyTypeDivResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.journeyTypeDiv,
+      "Journey type selector",
+      'button[role="combobox"], button[aria-haspopup="listbox"], button',
+      { type: "click", expectStateChange: true }
+    );
+
+    travelerInfoDivResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.travelerInfoDiv,
+      "Traveler info selector",
+      'button[role="combobox"], button[aria-haspopup="listbox"], button'
+    );
+
+    promoCodeDivResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.promoCodeDiv,
+      "Promo code section",
+      'input[type="text"], input'
+    );
+
+    originFieldResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.originField,
+      "Origin field",
+      'input[type="text"], input, button[role="combobox"]',
+      { type: "focus" }
+    );
+
+    startDateTogglerResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.startDateToggler,
+      "Start date selector",
+      'button, input[type="date"], input'
+    );
+
+    endDateTogglerResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.endDateToggler,
+      "End date selector",
+      'button, input[type="date"], input'
+    );
+
+    searchButtonResult = await validateElement(
+      page,
+      VALIDATION_SELECTORS.searchButton,
+      "Search button",
+      undefined,
+      { type: "hover" }
+    );
+
+    const allElementsFound =
+      journeyTypeDivResult.found &&
+      travelerInfoDivResult.found &&
+      promoCodeDivResult.found &&
+      originFieldResult.found &&
+      startDateTogglerResult.found &&
+      endDateTogglerResult.found &&
+      searchButtonResult.found;
+    totalInteractiveElements = [
+      journeyTypeDivResult,
+      travelerInfoDivResult,
+      promoCodeDivResult,
+      originFieldResult,
+      startDateTogglerResult,
+      endDateTogglerResult,
+      searchButtonResult
+    ].filter(result => result.childFound || result.found);
+
+    accessibleElements = totalInteractiveElements.filter(result =>
+      (result.childDetails?.hasValidSemantics || result.details?.hasValidSemantics) &&
+      (result.childDetails?.accessibleName || result.details?.accessibleName)
+    );
+
+    interactiveElements = totalInteractiveElements.filter(result =>
+      result.interactionResult?.success
+    );
+
+    message = allElementsFound
+      ? `Success - Screenshot captured, ${totalInteractiveElements.length} elements found, ${accessibleElements.length} accessible, ${interactiveElements.length} interactive`
+      : "Success - Screenshot captured but one or more elements NOT found";
+
   } catch (error: any) {
     console.error("Error:", error);
     console.error("Stack trace:", error.stack);
@@ -220,18 +302,38 @@ export const handler = async (
     }
   }
 
+  const responseBody = JSON.stringify({
+      message,
+      timestamp: new Date().toISOString(),
+      screenshotUrl,
+      accessibilityReport: {
+        totalElements: totalInteractiveElements?.length || 0,
+        accessibleElements: accessibleElements?.length || 0,
+        interactiveElements: interactiveElements?.length || 0,
+        accessibilityScore: totalInteractiveElements?.length > 0
+          ? Math.round((accessibleElements?.length / totalInteractiveElements.length) * 100)
+          : 0,
+      },
+      divTests: {
+        journeyTypeDiv: journeyTypeDivResult,
+        travelerInfoDiv: travelerInfoDivResult,
+        promoCodeDiv: promoCodeDivResult,
+        originField: originFieldResult,
+        startDateToggler: startDateTogglerResult,
+        endDateToggler: endDateTogglerResult,
+        searchButton: searchButtonResult,
+      },
+      event,
+    })
+
   // Create response with URL of the screenshot if it was successful
   const response: APIGatewayProxyResult = {
     statusCode,
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      message,
-      timestamp: new Date().toISOString(),
-      screenshotUrl,
-      event,
-    }),
+    body: responseBody
   };
+  console.log("Formatted Response:", responseBody )
   return response;
 };

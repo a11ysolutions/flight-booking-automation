@@ -1,0 +1,24 @@
+# .dockerignore
+node_modules
+dist
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.git
+.github
+.vscode
+.env*
+README.md
+*.md
+Dockerfile
+docker-compose.yml
+.gitignore
+.serverless
+test-results
+playwright-report
+coverage
+.nyc_output
+.cache
+*.log
+.DS_Store
+Thumbs.db

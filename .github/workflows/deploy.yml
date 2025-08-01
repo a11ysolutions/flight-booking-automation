@@ -17,37 +17,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Verify required environment variables
-      run: |
-        REQUIRED_VARIABLES=(
-          "AWS_ACCESS_KEY_ID"
-          "AWS_SECRET_ACCESS_KEY"
-          "AWS_REGION"
-          "AWS_ECR_REPOSITORY"
-          "AWS_S3_BUCKET"
-          "AWS_ACCOUNT_ID"
-          "AWS_ROLE_ARN"
-          "AWS_ECR_REPOSITORY_URL"
-          "IMAGE_TAG"
-          "AWS_LAMBDA_FUNCTION_NAME"
-          "AWS_SERVICE_NAME"
-        )
-        echo "Checking required environment variables..."
-        MISSING_VARIABLES=false
-        for VAR in "${REQUIRED_VARIABLES[@]}"; do
-          if [ -z "${!VAR}" ]; then
-            echo "❌ Missing variable: $VAR"
-            MISSING_VARIABLES=true
-          else
-            echo "✅ Found variable: $VAR"
-          fi
-        done
-        if [ "$MISSING_VARIABLES" = true ]; then
-          echo "❌ One or more required environment variables are missing. Please configure them in your environment settings."
-          exit 1
-        fi
-        echo "✅ All required environment variables are present."
-
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:

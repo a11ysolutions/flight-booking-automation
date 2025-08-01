@@ -16,6 +16,37 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Verify required secrets
+      run: |
+        REQUIRED_SECRETS=(
+          "AWS_ACCESS_KEY_ID"
+          "AWS_SECRET_ACCESS_KEY"
+          "AWS_REGION"
+          "AWS_ECR_REPOSITORY"
+          "AWS_S3_BUCKET"
+          "AWS_ACCOUNT_ID"
+          "AWS_ROLE_ARN"
+          "AWS_ECR_REPOSITORY_URL"
+          "IMAGE_TAG"
+          "AWS_LAMBDA_FUNCTION_NAME"
+          "AWS_SERVICE_NAME"
+        )
+        echo "Checking required secrets..."
+        MISSING_SECRETS=false
+        for SECRET in "${REQUIRED_SECRETS[@]}"; do
+          if [ -z "${!SECRET}" ]; then
+            echo "❌ Missing secret: $SECRET"
+            MISSING_SECRETS=true
+          else
+            echo "✅ Found secret: $SECRET"
+          fi
+        done
+        if [ "$MISSING_SECRETS" = true ]; then
+          echo "❌ One or more required secrets are missing. Please configure them in your repository settings."
+          exit 1
+        fi
+        echo "✅ All required secrets are present."
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
@@ -26,6 +57,23 @@ jobs:
 
     - name: Install jq
       run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Install AWS CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y awscli
+        aws --version
+
+    - name: Configure AWS CLI
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+        aws configure set default.region $AWS_REGION
+        aws sts get-caller-identity
 
     - name: Build the project
       run: npm run build

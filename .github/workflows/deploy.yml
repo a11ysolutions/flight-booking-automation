@@ -22,35 +22,26 @@ jobs:
       with:
         node-version: 18
 
+    - name: Debug secrets
+      run: |
+        echo "AWS_REGION is set: ${{ secrets.AWS_REGION != '' }}"
+        echo "ECR Repository: ${{ secrets.AWS_ECR_REPOSITORY != '' }}
+
     - name: Install dependencies
       run: npm install
 
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --update
-        aws --version
-
-    - name: Configure AWS CLI
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      run: |
-        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-        aws configure set default.region $AWS_REGION
-        aws sts get-caller-identity
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build the project
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -62,22 +53,10 @@ jobs:
       run: npm run build
 
     - name: Deploy to ECR
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
       run: npm run deploy:ecr
 
     - name: Deploy Lambda
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
       run: npm run deploy
 
     - name: Invoke Lambda function
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
       run: npm run invoke

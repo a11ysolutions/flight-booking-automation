@@ -17,9 +17,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Verify required secrets
+    - name: Verify required environment variables
       run: |
-        REQUIRED_SECRETS=(
+        REQUIRED_VARIABLES=(
           "AWS_ACCESS_KEY_ID"
           "AWS_SECRET_ACCESS_KEY"
           "AWS_REGION"
@@ -32,21 +32,21 @@ jobs:
           "AWS_LAMBDA_FUNCTION_NAME"
           "AWS_SERVICE_NAME"
         )
-        echo "Checking required secrets..."
-        MISSING_SECRETS=false
-        for SECRET in "${REQUIRED_SECRETS[@]}"; do
-          if [ -z "${!SECRET}" ]; then
-            echo "❌ Missing secret: $SECRET"
-            MISSING_SECRETS=true
+        echo "Checking required environment variables..."
+        MISSING_VARIABLES=false
+        for VAR in "${REQUIRED_VARIABLES[@]}"; do
+          if [ -z "${!VAR}" ]; then
+            echo "❌ Missing variable: $VAR"
+            MISSING_VARIABLES=true
           else
-            echo "✅ Found secret: $SECRET"
+            echo "✅ Found variable: $VAR"
           fi
         done
-        if [ "$MISSING_SECRETS" = true ]; then
-          echo "❌ One or more required secrets are missing. Please configure them in your repository settings."
+        if [ "$MISSING_VARIABLES" = true ]; then
+          echo "❌ One or more required environment variables are missing. Please configure them in your environment settings."
           exit 1
         fi
-        echo "✅ All required secrets are present."
+        echo "✅ All required environment variables are present."
 
     - name: Set up Node.js
       uses: actions/setup-node@v3

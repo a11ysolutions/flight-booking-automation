@@ -47,6 +47,18 @@ jobs:
         aws sts get-caller-identity
 
     - name: Build the project
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        AWS_ECR_REPOSITORY_URL: ${{ secrets.AWS_ECR_REPOSITORY_URL }}
+        IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+        AWS_LAMBDA_FUNCTION_NAME: ${{ secrets.AWS_LAMBDA_FUNCTION_NAME }}
+        AWS_SERVICE_NAME: ${{ secrets.AWS_SERVICE_NAME }}
       run: npm run build
 
     - name: Deploy to ECR

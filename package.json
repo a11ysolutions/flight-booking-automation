@@ -10,7 +10,7 @@
     "deploy:ecr": "node scripts/deploy-to-ecr.js",
     "deploy": "npm run build && npx serverless deploy --stage dev",
     "remove": "npx serverless remove --stage dev",
-    "invoke": "npx serverless invoke -f playwrightTest"
+    "invoke": "npx serverless invoke -f playwrightTest | jq \".body | fromjson\""
   },
   "keywords": [
     "playwright",
